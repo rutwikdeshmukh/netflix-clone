@@ -4,18 +4,20 @@ pipeline {
         AWS_ACCOUNT_ID = '956630439322'
         AWS_DEFAULT_REGION = 'ap-south-1'
         API_KEY = '7975259a1710981340754da567bc7579'
-    //IMAGE_REPO_NAME="netflix-clone"
-    //IMAGE_TAG="app-image"
-    //REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
     }
 
     // Retrieve an authentication token and authenticating docker client with registry
-    stages {
+    stages  {
+        stage('CLEANUP') {
+                steps {
+                    deleteDir()
+                }
+        }
+
         stage('AUTHENTICATING DOCKER CLIENT WITH AWS ECR') {
                 steps {
                     script {
                     sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
-                    //aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 956630439322.dkr.ecr.ap-south-1.amazonaws.com
                     }
                 }
         }
@@ -23,9 +25,16 @@ pipeline {
         // Cloning into source code repository
         stage('GIT CLONE') {
             steps {
-                //checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'rutwikdeshmukh', url: 'https://github.com/rutwikdeshmukh/netflix-clone.git']]])
                 sh 'git clone https://github.com/rutwikdeshmukh/netflix-clone.git'
-                sh 'cd netflix-clone'
+            }
+        }
+
+        stage('CHANGING THE WORKING DIRECTORY') {
+            steps {
+                dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
+                    sh 'ls'
+                    sh 'pwd'
+                }
             }
         }
 
@@ -33,8 +42,10 @@ pipeline {
         stage('Building image') {
             steps {
                 script {
-                    sh "docker build --build-arg VITE_APP_TMDB_V3_API_KEY=${API_KEY} -t netflix-clone ."
-                //sh "docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:$IMAGE_TAG"
+                    dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
+                        sh 'docker build -t netflix-clone .'
+                    }
+                // sh 'docker build -t netflix-clone .'
                 }
             }
         }
@@ -43,8 +54,10 @@ pipeline {
         stage('TAGGING IMAGE') {
             steps {
                 script {
-                    sh 'docker tag netflix-clone:latest 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
-                //sh "docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:$IMAGE_TAG"
+                    dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
+                        sh 'docker tag netflix-clone:latest 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
+                    }
+                // sh 'docker tag netflix-clone:latest 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
                 }
             }
         }
@@ -53,7 +66,10 @@ pipeline {
         stage('PUSH TO ECR') {
             steps {
                 script {
-                    sh 'docker push 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
+                    dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
+                        sh 'docker push 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
+                    }
+                // sh 'docker push 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
                 }
             }
         }
