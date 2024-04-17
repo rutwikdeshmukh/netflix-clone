@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+    environment {
+        AWS_ACCOUNT_ID = '956630439322'
+        AWS_DEFAULT_REGION = 'ap-south-1'
+        API_KEY = '7975259a1710981340754da567bc7579'
+    //IMAGE_REPO_NAME="netflix-clone"
+    //IMAGE_TAG="app-image"
+    //REPOSITORY_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}"
+    }
+
+    // Retrieve an authentication token and authenticating docker client with registry
+    stages {
+        stage('AUTHENTICATING DOCKER CLIENT WITH AWS ECR') {
+                steps {
+                    script {
+                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+                    //aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 956630439322.dkr.ecr.ap-south-1.amazonaws.com
+                    }
+                }
+        }
+
+        // Cloning into source code repository
+        stage('GIT CLONE') {
+            steps {
+                //checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'rutwikdeshmukh', url: 'https://github.com/rutwikdeshmukh/netflix-clone.git']]])
+                sh 'git clone https://github.com/rutwikdeshmukh/netflix-clone.git'
+                sh 'cd netflix-clone'
+            }
+        }
+
+        // Building the docker images
+        stage('Building image') {
+            steps {
+                script {
+                    sh "docker build --build-arg VITE_APP_TMDB_V3_API_KEY=${API_KEY} -t netflix-clone ."
+                //sh "docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:$IMAGE_TAG"
+                }
+            }
+        }
+
+        // Tagging the docker image
+        stage('TAGGING IMAGE') {
+            steps {
+                script {
+                    sh 'docker tag netflix-clone:latest 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
+                //sh "docker tag ${IMAGE_REPO_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:$IMAGE_TAG"
+                }
+            }
+        }
+
+        // Pushing the docker image to ECR
+        stage('PUSH TO ECR') {
+            steps {
+                script {
+                    sh 'docker push 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
+                }
+            }
+        }
+    }
+}
