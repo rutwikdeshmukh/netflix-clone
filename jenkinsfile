@@ -45,7 +45,6 @@ pipeline {
                     dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
                         sh 'docker build -t netflix-clone .'
                     }
-                // sh 'docker build -t netflix-clone .'
                 }
             }
         }
@@ -55,9 +54,8 @@ pipeline {
             steps {
                 script {
                     dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
-                        sh 'docker tag netflix-clone:latest 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
+                        sh 'docker tag netflix-clone:latest 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:netflix-clone-latest'
                     }
-                // sh 'docker tag netflix-clone:latest 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
                 }
             }
         }
@@ -67,9 +65,8 @@ pipeline {
             steps {
                 script {
                     dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
-                        sh 'docker push 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
+                        sh 'docker push 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:netflix-clone-latest'
                     }
-                // sh 'docker push 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:latest'
                 }
             }
         }
