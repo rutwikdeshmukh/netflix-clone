@@ -49,7 +49,7 @@ pipeline {
             }
         }
 
-        // Pushing the docker image to ECR
+        // Pushing the Docker image to ECR
         stage('PUSH TO ECR') {
             steps {
                 script {
