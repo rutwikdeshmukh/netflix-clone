@@ -245,8 +245,8 @@ Resources:
           sudo systemctl enable docker
           sudo yum install -y git
           sudo systemctl status jenkins
-          docker --version
-          sudo sudo mount -o remount,size=10G /tmp/
+          sudo docker --version
+          sudo mount -o remount,size=10G /tmp/
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-EC2

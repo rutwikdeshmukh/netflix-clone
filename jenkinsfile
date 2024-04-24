@@ -4,6 +4,7 @@ pipeline {
         AWS_ACCOUNT_ID = '956630439322'
         AWS_DEFAULT_REGION = 'ap-south-1'
         API_KEY = '7975259a1710981340754da567bc7579'
+        ECR_REPO_NAME = 'netflixclone-ecr'
     }
 
     // Retrieve an authentication token and authenticating docker client with registry
@@ -29,7 +30,7 @@ pipeline {
             }
         }
 
-        stage('CHANGING THE WORKING DIRECTORY') {
+        stage('CHECK WORKING DIRECTORY AND FILES') {
             steps {
                 dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
                     sh 'ls'
@@ -39,7 +40,7 @@ pipeline {
         }
 
         // Building the docker images
-        stage('Building image') {
+        stage('BUILDING IMAGE') {
             steps {
                 script {
                     dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
@@ -55,7 +56,7 @@ pipeline {
             steps {
                 script {
                     dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
-                        sh 'docker tag netflix-clone:latest 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:netflix-clone-latest'
+                        sh 'docker tag netflix-clone:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:netflix-clone-latest'
                     }
                 }
             }
@@ -66,7 +67,7 @@ pipeline {
             steps {
                 script {
                     dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
-                        sh 'docker push 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:netflix-clone-latest'
+                        sh 'docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:netflix-clone-latest'
                     }
                 }
             }
