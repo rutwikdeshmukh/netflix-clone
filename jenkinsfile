@@ -31,7 +31,7 @@ pipeline {
 
         stage('CHANGING THE WORKING DIRECTORY') {
             steps {
-                dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
+                dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
                     sh 'ls'
                     sh 'pwd'
                 }
@@ -42,9 +42,9 @@ pipeline {
         stage('Building image') {
             steps {
                 script {
-                    dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
-                        envsubst <Dockerfile> dockerfile
-                        sh 'docker build -t netflix-clone .'
+                    dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
+                        sh 'envsubst < Dockerfile > DockerfileTemp'
+                        sh 'docker build -f DockerfileTemp -t netflix-clone .'
                     }
                 }
             }
@@ -54,7 +54,7 @@ pipeline {
         stage('TAGGING IMAGE') {
             steps {
                 script {
-                    dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
+                    dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
                         sh 'docker tag netflix-clone:latest 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:netflix-clone-latest'
                     }
                 }
@@ -65,7 +65,7 @@ pipeline {
         stage('PUSH TO ECR') {
             steps {
                 script {
-                    dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
+                    dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
                         sh 'docker push 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-clone:netflix-clone-latest'
                     }
                 }
@@ -73,4 +73,3 @@ pipeline {
         }
     }
 }
-// Is webhook working?
