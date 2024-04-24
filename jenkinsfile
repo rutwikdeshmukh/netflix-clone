@@ -43,7 +43,7 @@ pipeline {
             steps {
                 script {
                     dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
-                        sh 'docker build -t netflix-clone .'
+                        sh 'docker build --build-args TMDB_V3_API_KEY=7975259a1710981340754da567bc7579 -t netflix-clone .'
                     }
                 }
             }

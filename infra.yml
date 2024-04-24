@@ -1,0 +1,433 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Template for creating Base Infrastructure
+
+# VPC:1 --
+# Subnets:6 --
+# AZ:2 --
+# IGW --
+# TGW --
+# RouteTables:2
+# SecurityGroup:1
+# EC2:1
+# ECR:1
+# IamSsmInstanceProfile:1
+# KeyPair:1
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: VPC Details
+        Parameters:
+          - VpcName
+          - VpcCidr
+          - PublicACidr
+          - AppACidr
+          - DataACidr
+          - PublicBCidr
+          - AppBCidr
+          - DataBCidr
+          - KeyPairName
+      - Label:
+          default: Tagging Parameters
+        Parameters:
+          - ProjectName
+
+Parameters:
+  VpcName:
+    Type: String
+    Description: Name for the VPC
+    Default: NetClone-VPC
+  VpcCidr:
+    Type: String
+    Description: CIDR for the VPC
+    Default: 10.0.0.0/23
+  PublicACidr:
+    Type: String
+    Description: CIDR for Public subnet in AZ A
+    Default: 10.0.0.0/26
+  AppACidr:
+    Type: String
+    Description: CIDR for Application subnet in AZ A (Not required, if this is Network VPC)
+    Default: 10.0.0.64/26
+  DataACidr:
+    Type: String
+    Description: CIDR for Data subnet in AZ A (Network subnet, if this is Network VPC)
+    Default: 10.0.0.128/26
+  PublicBCidr:
+    Type: String
+    Description: CIDR for Public subnet in AZ B
+    Default: 10.0.1.0/26
+  AppBCidr:
+    Type: String
+    Description: CIDR for Application subnet in AZ B (Not required, if this is Network VPC)
+    Default: 10.0.1.64/26
+  DataBCidr:
+    Type: String
+    Description: CIDR for Data subnet in AZ B (Network subnet, if this is Network VPC)
+    Default: 10.0.1.128/26
+  ProjectName:
+    Type: String
+    Description: Name of the project to tag all the resources accordingly
+    Default: NetflixClone
+  KeyPairName:
+    Type: String
+    Description: Name of the EC2 Key pair which is to be associated to the EC2 created by this template.
+    Default: NetflixCloneKeyPair
+
+Resources:
+  # VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      Tags:
+        - Key: Name
+          Value: !Ref VpcName
+        - Key: ProjectName
+          Value: !Ref ProjectName
+
+  # Subnets
+  PublicA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicACidr
+      MapPublicIpOnLaunch: True
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: PublicA
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  DataA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref DataACidr
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: DataA
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  AppA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref AppACidr
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: AppA
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  PublicB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicBCidr
+      MapPublicIpOnLaunch: True
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: PublicB
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  DataB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref DataBCidr
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: DataB
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  AppB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref AppBCidr
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: AWS::Region
+      Tags:
+        - Key: Name
+          Value: AppB
+        - Key: ProjectName
+          Value: !Ref ProjectName
+
+  # Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: InternetGateway
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  VPCInternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # NAT Gateway in Public Subnets
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: NatGatewayEIP
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref PublicA
+      Tags:
+        - Key: Name
+          Value: NatGateway
+        - Key: ProjectName
+          Value: !Ref ProjectName
+
+  #Ec2
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-001843b876406202a
+      SubnetId: !Ref PublicA
+      SecurityGroupIds: [!Ref SecurityGroup]
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            DeleteOnTermination: true
+            VolumeSize: 30
+      KeyName: !Ref KeyPairName
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo yum update -y
+          sudo wget -O /etc/yum.repos.d/jenkins.repo \
+              https://pkg.jenkins.io/redhat-stable/jenkins.repo
+          sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+          sudo yum upgrade
+          sudo dnf install java-17-amazon-corretto -y
+          sudo yum install jenkins -y
+          sudo systemctl enable jenkins
+          sudo systemctl start jenkins
+          sudo yum install docker -y
+          sudo systemctl start docker
+          sudo chmod 666 /var/run/docker.sock
+          sudo systemctl enable docker
+          sudo yum install -y git
+          sudo systemctl status jenkins
+          docker --version
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-EC2
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  EC2EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref EC2Instance
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-Ec2-EIP
+
+  #Security Group
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for NetflixClone --allow-all
+      GroupName: !Sub ${ProjectName}-SecurityGroup
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+          Description: Allow all inbound traffic from the Internet
+        - CidrIp: !Ref VpcCidr
+          IpProtocol: -1
+          Description: Allow all inbound traffic from the VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-SecurityGroup
+        - Key: ProjectName
+          Value: !Ref ProjectName
+
+  #IAM Instance Profile
+  FullEcrEksPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: FullEcrEks
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - ecr:*
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - eks:*
+            Resource: "*"
+  Ec2SsmIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-EC2-Role
+      Description: !Sub IAM Role for ${ProjectName}-EC2 with SSM, Full ECR and Full EKS Access.
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - !Ref FullEcrEksPolicy
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-EC2-SSM-Role
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${ProjectName}-EC2-InstanceProfile
+      Roles:
+        - !Ref Ec2SsmIamRole
+
+  #RoutTables
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-PublicRouteTable
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  PublicRT:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-PrivateRouteTable
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  PrivateRT:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+      RouteTableId: !Ref PrivateRouteTable
+
+  #Route Table Subnet Associations
+  PublicARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicA
+  PublicBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicB
+  DataARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref DataA
+  DataBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref DataB
+  AppARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref AppA
+  AppBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref AppB
+
+  #ECR Repository
+  EcrRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: netflixclone-ecr
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: MUTABLE
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+          "rules": [
+            {
+              "action": {"type": "expire"},
+              "selection": {
+                "tagStatus": "untagged",
+                "countType": "sinceImagePushed",
+                "countUnit": "days",
+                "countNumber": 1
+              },
+              "description": "Expire untagged images older than a day",
+              "rulePriority": 1
+            }
+          ]
+          }
+      Tags:
+        - Key: Name
+          Value: netflixclone-ecr
+        - Key: ProjectName
+          Value: !Ref ProjectName
+# Outputs
+Outputs:
+  VpcId:
+    Description: The ID of the VPC
+    Value: !Ref VPC
+  IGW:
+    Description: The ID of the IGW
+    Value: !Ref InternetGateway
+  NatGatewayA:
+    Description: The ID of the NAT Gateway A
+    Value: !Ref NatGateway
+  EC2EIP:
+    Description: The EIP attached to the EC2
+    Value: !Ref EC2EIP
