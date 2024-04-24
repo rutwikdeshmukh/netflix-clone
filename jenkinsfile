@@ -43,7 +43,7 @@ pipeline {
             steps {
                 script {
                     dir('/var/lib/jenkins/workspace/CI-Build-and-ECR-Push/netflix-clone/') {
-                        ennsubst <Dockerfile> dockerfile
+                        envsubst <Dockerfile> dockerfile
                         sh 'docker build -t netflix-clone .'
                     }
                 }
