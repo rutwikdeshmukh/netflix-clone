@@ -22,8 +22,10 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: netflix-clone
+  namespace: netflix-clone-ns
   labels:
     app: netflix-clone
+    namespace: netflix-clone-ns
 spec:
   replicas: 1
   selector:
