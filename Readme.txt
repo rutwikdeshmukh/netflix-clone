@@ -23,46 +23,10 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
     6.
     7.
     
-
-http://<JenkinsInstanceIp>:8080/
-
-aws eks update-kubeconfig --region ap-south-1 --name NetflixClone-EKS-Dev
-aws eks update-kubeconfig --region ap-south-1 --name NetflixClone-EKS-Dev --profile netflix
-
+aws eks update-kubeconfig --region ap-south-1 --name NetflixClone-cluster 
 kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80
 
-
-AmazonSSMManagedInstanceCore
-EcrAccess
-EksAll
-
-INSTALL NODE JS AND FITHUB Plugin
-
-
-Reference: 
-https://github.com/shubnimkar/Netflix-clone
-https://github.com/UsaSai99charanteja/DevSecOps-Project.git
-
-
-
-
-
+eksctl commands to create a cluster::
 eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml
 eksctl create cluster -f EksctlClusterCreate.yml
 eksctl delete cluster --region=ap-south-1 --name=netflix-clone
-
-
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: netflix-clone-cluster-ip
-  namespace: netflix-clone-ns
-spec:
-  type: ClusterIP
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 80
-  selector:
-    app: netflix-clone

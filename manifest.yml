@@ -47,6 +47,20 @@ spec:
               cpu: 128m
               memory: 256Mi
 ---
+kind: Service
+apiVersion: v1
+metadata:
+  name: netflix-clone-cluster-ip
+  namespace: netflix-clone-ns
+spec:
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  selector:
+    app: netflix-clone
+---
 apiVersion: v1
 kind: Service
 metadata:
