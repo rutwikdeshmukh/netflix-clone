@@ -1,0 +1,48 @@
+accessConfig:
+  authenticationMode: API_AND_CONFIG_MAP
+apiVersion: eksctl.io/v1alpha5
+cloudWatch:
+  clusterLogging: {}
+fargateProfiles:
+- name: fp-default
+  selectors:
+  - namespace: default
+  - namespace: kube-system
+  status: ""
+iam:
+  vpcResourceControllerPolicy: true
+  withOIDC: true
+kind: ClusterConfig
+kubernetesNetworkConfig:
+  ipFamily: IPv4
+metadata:
+  name: netflix-clone
+  region: ap-south-1
+  tags:
+    ProjectName: NetflixClone
+  version: "1.29"
+privateCluster:
+  enabled: false
+  skipEndpointCreation: false
+vpc:
+  autoAllocateIPv6: false
+  cidr: 10.0.0.0/23
+  clusterEndpoints:
+    privateAccess: true
+    publicAccess: true
+  publicAccessCIDRs: [150.242.141.14/32]
+  id: vpc-0bc1c3fe2b18816b7
+  manageSharedNodeSecurityGroupRules: true
+  securityGroup: sg-0ed27de8dddafb2ae
+  nat:
+    gateway: Disable
+  subnets:
+    private:
+      ap-south-1a:
+        az: ap-south-1a
+        cidr: 10.0.0.64/26
+        id: subnet-09359a650ff978920
+      ap-south-1b:
+        az: ap-south-1b
+        cidr: 10.0.1.64/26
+        id: subnet-025ccf229bc29a533
