@@ -8,7 +8,7 @@ metadata:
 kind: SecurityGroupPolicy
 apiVersion: vpcresources.k8s.aws/v1beta1
 metadata:
-  name: NetflixCloneSecurityGroup
+  name: netflix-clone-security-group
   namespace: netflix-clone-ns
 spec:
   podSelector:
