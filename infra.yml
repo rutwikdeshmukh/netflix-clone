@@ -248,6 +248,14 @@ Resources:
           sudo docker --version
           sudo mount -o remount,size=10G /tmp/
           sudo yum install npm -y
+          sudo curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.29.3/2024-04-19/bin/linux/amd64/kubectl
+          sudo curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.29.3/2024-04-19/bin/linux/amd64/kubectl.sha256
+          sudo sha256sum -c kubectl.sha256
+          sudo openssl sha1 -sha256 kubectl
+          sudo chmod +x ./kubectl
+          sudo mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
+          sudo echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-EC2
