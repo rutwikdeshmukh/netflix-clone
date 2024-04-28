@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-app
+  name: netflix
 spec:
   selector:
     matchLabels:
-      app: my-app
+      app: netflix
   template:
     metadata:
       labels:
-        app: my-app
+        app: netflix
     spec:
       containers:
-      - name: my-app
-        image: my-repo/my-app:1.0.0
+      - name: netflix
+        image: 956630439322.dkr.ecr.ap-south-1.amazonaws.com/netflix-ecr:netflix-clone-v1
         ports:
         - containerPort: 80
 
@@ -21,11 +21,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-app
+  name: netflix
 spec:
   type: LoadBalancer
   selector:
-    app: my-app
+    app: netflix
   ports:
   - name: http
     port: 80

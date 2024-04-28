@@ -358,7 +358,7 @@ Resources:
     DependsOn: EKSNodegroup
     Properties:
       InstanceType: t3.medium
-      ImageId: ami-001843b876406202a
+      ImageId: ami-0f58b397bc5c1f2e8 # Canonical, Ubuntu, 24.04 LTS, amd64 noble image build on 2024-04-23
       SubnetId: !Ref PublicA
       SecurityGroupIds: [!Ref SecurityGroup]
       IamInstanceProfile: !Ref Ec2InstanceProfile
@@ -400,6 +400,9 @@ Resources:
           echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
           git clone https://github.com/rutwikdeshmukh/netflix-clone.git
           cd netflix-clone
+          docker run -d --name sonar -p 9000:9000 sonarqube:lts-community
+          sudo chmod +x InstallTrivy.sh
+          sudo bash InstallTrivy.sh
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-EC2
@@ -473,4 +476,10 @@ Resources:
 Outputs:
   JenkinsServerURL:
     Description: URL for the Jenkins Server
-    Value: !Sub http://${EC2EIP}:8080
+    Value: !Sub http://${EC2EIP}:8080/
+  JenkinsInitialPassword:
+    Description: SSH command to log into the EC2. Make sure you are in the directory where the KeyPair.pem associated with this EC2 is present.
+    Value: !Sub ssh -i "${KeyPairName}.pem" ec2-user@${EC2EIP}
+  SonarqubeURL:
+    Description: URL for the Jenkins Server
+    Value: !Sub http://${EC2EIP}:9000/

@@ -21,18 +21,16 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
 ========FILES IN THIS GITHUB REPO========
     1. infra.yml: A cloudformation template to set up the base infrastructure including a kubernetes cluster in the AWS Cloud.
         Resources created by the template:
-        a. VPC
-        b. Subnets
+        a. 1 VPC
+        b. 6 Subnets
         c. Internet Gateway
         d. NAT Gateway
-        e. EC2 Insance
-        f. IAM Instance Profile
+        e. 1 EC2 Insance
+        f. IAM Roles and Instance Profile
         g. Route Tables
         h. Security Group
-        i. EKS Cluster
-        j. EKS Node Group
-        k. EKS Worker Node
-        l. EKS IAM Roles
+        i. 1 EKS Cluster >> 1 EKS Node Group >> 2 EKS Worker Nodes
+        j. ECR Private Repository
     2. Jenkinsfile: Contains the groovy script to clone the application code from github, BUILD an DOCKER IMAGE from the code and PUSH it to ECR.
 
 
