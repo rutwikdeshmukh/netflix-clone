@@ -37,8 +37,8 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
 
 
 
-
-
+========REFERENCES========
+https://aquasecurity.github.io/trivy/v0.50/
 
 
 

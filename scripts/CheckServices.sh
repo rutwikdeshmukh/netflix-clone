@@ -1,16 +1,18 @@
-echo "Docker Version:"
+echo ">>>>>>>>>>>>>>> Docker Version <<<<<<<<<<<<<<<"
 docker --version
-echo "AWSCLI Version:"
+echo ">>>>>>>>>>>>>>> AWSCLI Version <<<<<<<<<<<<<<<"
 aws --version
-echo "Node Version:"
+echo ">>>>>>>>>>>>>>> Node Version <<<<<<<<<<<<<<<"
 node -v
-echo "NPM Version:"
+echo ">>>>>>>>>>>>>>> NPM Version <<<<<<<<<<<<<<<"
 npm -v
-echo "Jenkins Status Version:"
+echo ">>>>>>>>>>>>>>> Jenkins Status Version <<<<<<<<<<<<<<<"
 systemctl status jenkins | grep Active
-echo "Trivy Version:"
+echo ">>>>>>>>>>>>>>> Trivy Version <<<<<<<<<<<<<<<"
 trivy -v
-echo "KUBECTL Version:"
+echo ">>>>>>>>>>>>>>> KUBECTL Version <<<<<<<<<<<<<<<"
 kubectl version --client
-echo "Jenkins Initial Password:"
+echo ">>>>>>>>>>>>>>> Java Version <<<<<<<<<<<<<<<"
+cat /var/lib/jenkins/secrets/initialAdminPassword
+echo ">>>>>>>>>>>>>>> Jenkins Initial Password <<<<<<<<<<<<<<<"
 cat /var/lib/jenkins/secrets/initialAdminPassword
