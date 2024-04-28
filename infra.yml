@@ -377,6 +377,7 @@ Resources:
           cd netflix-clone
           apt-get install dkpg
           bash InstallAWSCLI.sh
+          bash InstallKUBECTL.sh
           bash InstallDocker.sh
           bash InstallJenkins.sh
           bash InstallTrivy.sh
