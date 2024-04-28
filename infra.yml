@@ -375,8 +375,11 @@ Resources:
           sudo su
           git clone https://github.com/rutwikdeshmukh/netflix-clone.git
           cd netflix-clone
+          apt-get install dkpg
+          bash InstallAWSCLI.sh
+          bash InstallDocker.sh
           bash InstallJenkins.sh
-          
+          bash InstallTrivy.sh
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-EC2
