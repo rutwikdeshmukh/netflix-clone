@@ -469,3 +469,8 @@ Resources:
           Value: netflix-ecr
         - Key: ProjectName
           Value: !Ref ProjectName
+
+Outputs:
+  JenkinsServerURL:
+    Description: URL for the Jenkins Server
+    Value: !Sub http://${EC2EIP}:8080
