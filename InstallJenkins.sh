@@ -14,3 +14,6 @@ sudo apt-get update -y
 sudo apt-get install jenkins -y
 sudo systemctl start jenkins
 sudo systemctl status jenkins
+mount -o remount,size=10G /tmp/
+sudo apt install nodejs -y
+sudo apt install npm -y

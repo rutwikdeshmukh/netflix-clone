@@ -369,10 +369,13 @@ Resources:
             DeleteOnTermination: true
             VolumeSize: 50
       KeyName: !Ref KeyPairName
-      # UserData:
-      #   Fn::Base64: |
-      #     #!/bin/bash
-      #     sudo su 
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          sudo su
+          git clone https://github.com/rutwikdeshmukh/netflix-clone.git
+          cd netflix-clone
+          bash InstallJenkins.sh
           
       Tags:
         - Key: Name
