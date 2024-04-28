@@ -13,6 +13,6 @@ trivy -v
 echo "--------------- KUBECTL Version ---------------"
 kubectl version --client
 echo "--------------- Java Version ---------------"
-cat /var/lib/jenkins/secrets/initialAdminPassword
+java -version
 echo "--------------- Jenkins Initial Password ---------------"
 cat /var/lib/jenkins/secrets/initialAdminPassword
