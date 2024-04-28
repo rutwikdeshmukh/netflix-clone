@@ -1,18 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Template for creating Base Infrastructure
 
-# VPC:1
-# Subnets:6
-# AZ:2
-# IGW
-# NGW
-# RouteTables:2
-# SecurityGroup:1
-# EC2:1
-# ECR:1
-# IamSsmInstanceProfile:1
-# KeyPair:1
-
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -175,7 +163,7 @@ Resources:
         - Key: ProjectName
           Value: !Ref ProjectName
 
-  # Internet Gateway
+  # Internet and NAT Gateways
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -189,8 +177,6 @@ Resources:
     Properties:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
-
-  # NAT Gateway in Public Subnets
   NatGatewayEIP:
     Type: AWS::EC2::EIP
     Properties:
@@ -211,7 +197,162 @@ Resources:
         - Key: ProjectName
           Value: !Ref ProjectName
 
-  #Ec2
+  # RoutTables
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-PublicRouteTable
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  PublicRT:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-PrivateRouteTable
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  PrivateRT:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+      RouteTableId: !Ref PrivateRouteTable
+  PublicARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicA
+  PublicBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicB
+  DataARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref DataA
+  DataBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref DataB
+  AppARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref AppA
+  AppBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref AppB
+
+    # Security Groups
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for NetflixClone --allow-all
+      GroupName: !Sub ${ProjectName}-SecurityGroup
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: -1
+          Description: Allow all inbound traffic from the Internet
+        - CidrIp: !Ref VpcCidr
+          IpProtocol: -1
+          Description: Allow all inbound traffic from the VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-SecurityGroup
+        - Key: ProjectName
+          Value: !Ref ProjectName
+
+  # IAM Resources
+  FullEcrEksPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: FullEcrEks
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - ecr:*
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - eks:*
+            Resource: "*"
+  Ec2SsmIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-EC2-Role
+      Description: !Sub IAM Role for ${ProjectName}-EC2 with SSM, Full ECR and Full EKS Access.
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - !Ref FullEcrEksPolicy
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-EC2-SSM-Role
+        - Key: ProjectName
+          Value: !Ref ProjectName
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${ProjectName}-EC2-InstanceProfile
+      Roles:
+        - !Ref Ec2SsmIamRole
+  EKSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}EKSRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+  EKSNodeGroupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}EKSNodeGroupRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+
+  # EC2
   EC2Instance:
     Type: AWS::EC2::Instance
     DependsOn: EKSNodegroup
@@ -258,7 +399,7 @@ Resources:
           mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
           echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
           git clone https://github.com/rutwikdeshmukh/netflix-clone.git
-          cd netflix-clone 
+          cd netflix-clone
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-EC2
@@ -273,101 +414,6 @@ Resources:
         - Key: Name
           Value: !Sub ${ProjectName}-Ec2-EIP
 
-  #Security Group
-  SecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security group for NetflixClone --allow-all
-      GroupName: !Sub ${ProjectName}-SecurityGroup
-      VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: -1
-          Description: Allow all inbound traffic from the Internet
-        - CidrIp: !Ref VpcCidr
-          IpProtocol: -1
-          Description: Allow all inbound traffic from the VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-SecurityGroup
-        - Key: ProjectName
-          Value: !Ref ProjectName
-
-  #IAM Instance Profile
-  FullEcrEksPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      ManagedPolicyName: FullEcrEks
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - ecr:*
-            Resource: "*"
-          - Effect: Allow
-            Action:
-              - eks:*
-            Resource: "*"
-  Ec2SsmIamRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${ProjectName}-EC2-Role
-      Description: !Sub IAM Role for ${ProjectName}-EC2 with SSM, Full ECR and Full EKS Access.
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-        - !Ref FullEcrEksPolicy
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-EC2-SSM-Role
-        - Key: ProjectName
-          Value: !Ref ProjectName
-  Ec2InstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      InstanceProfileName: !Sub ${ProjectName}-EC2-InstanceProfile
-      Roles:
-        - !Ref Ec2SsmIamRole
-
-  # EKS IAM Roles
-  EKSRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${ProjectName}EKSRole
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: eks.amazonaws.com
-            Action: sts:AssumeRole
-      Path: /
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-  EKSNodeGroupRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${ProjectName}EKSNodeGroupRole
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
-      Path: /
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-
   # EKS Cluster
   EKSCluster:
     Type: AWS::EKS::Cluster
@@ -380,8 +426,6 @@ Resources:
         SubnetIds:
           - !Ref AppA
           - !Ref AppB
-  
-  # EKS Node Group
   EKSNodegroup:
     Type: AWS::EKS::Nodegroup
     Properties:
@@ -395,71 +439,7 @@ Resources:
       Subnets: [!Ref AppA, !Ref AppB]
       InstanceTypes: [t3.medium]
 
-  #RoutTables
-  PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-PublicRouteTable
-        - Key: ProjectName
-          Value: !Ref ProjectName
-  PublicRT:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-      RouteTableId: !Ref PublicRouteTable
-  PrivateRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-PrivateRouteTable
-        - Key: ProjectName
-          Value: !Ref ProjectName
-  PrivateRT:
-    Type: AWS::EC2::Route
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway
-      RouteTableId: !Ref PrivateRouteTable
-
-  #Route Table Subnet Associations
-  PublicARouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref PublicA
-  PublicBRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref PublicB
-  DataARouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable
-      SubnetId: !Ref DataA
-  DataBRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable
-      SubnetId: !Ref DataB
-  AppARouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable
-      SubnetId: !Ref AppA
-  AppBRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PrivateRouteTable
-      SubnetId: !Ref AppB
-
-  #ECR Repository
+  # ECR Repository
   EcrRepository:
     Type: AWS::ECR::Repository
     Properties:
@@ -489,17 +469,3 @@ Resources:
           Value: netflix-ecr
         - Key: ProjectName
           Value: !Ref ProjectName
-# Outputs
-Outputs:
-  VpcId:
-    Description: The ID of the VPC
-    Value: !Ref VPC
-  IGW:
-    Description: The ID of the IGW
-    Value: !Ref InternetGateway
-  NatGatewayA:
-    Description: The ID of the NAT Gateway A
-    Value: !Ref NatGateway
-  EC2EIP:
-    Description: The EIP attached to the EC2
-    Value: !Ref EC2EIP
