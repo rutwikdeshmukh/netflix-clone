@@ -358,7 +358,7 @@ Resources:
     DependsOn: EKSNodegroup
     Properties:
       InstanceType: t3.medium
-      ImageId: ami-0f58b397bc5c1f2e8 # Canonical, Ubuntu, 24.04 LTS, amd64 noble image build on 2024-04-23
+      ImageId: ami-001843b876406202a # Amazon Linux 2023 
       SubnetId: !Ref PublicA
       SecurityGroupIds: [!Ref SecurityGroup]
       IamInstanceProfile: !Ref Ec2InstanceProfile
@@ -401,8 +401,6 @@ Resources:
           git clone https://github.com/rutwikdeshmukh/netflix-clone.git
           cd netflix-clone
           docker run -d --name sonar -p 9000:9000 sonarqube:lts-community
-          sudo chmod +x InstallTrivy.sh
-          sudo bash InstallTrivy.sh
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-EC2
