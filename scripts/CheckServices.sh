@@ -12,3 +12,5 @@ echo "Trivy Version:"
 trivy -v
 echo "KUBECTL Version:"
 kubectl version --client
+echo "Jenkins Initial Password:"
+cat /var/lib/jenkins/secrets/initialAdminPassword
