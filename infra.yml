@@ -376,11 +376,12 @@ Resources:
           git clone https://github.com/rutwikdeshmukh/netflix-clone.git
           cd netflix-clone
           apt-get install dkpg
-          bash InstallAWSCLI.sh
-          bash InstallKUBECTL.sh
-          bash InstallDocker.sh
-          bash InstallJenkins.sh
-          bash InstallTrivy.sh
+          bash scripts/InstallAWSCLI.sh
+          bash scripts/InstallKUBECTL.sh
+          bash scripts/InstallDocker.sh
+          bash scripts/InstallJenkins.sh
+          bash scripts/InstallTrivy.sh
+          docker run -d --name sonar -p 9000:9000 sonarqube:lts-community
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-EC2
