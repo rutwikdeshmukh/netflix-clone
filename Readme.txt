@@ -77,3 +77,123 @@ EKSCTL-TO-CREATE-CLUSTER ::
 ========REFERENCES========
 https://aquasecurity.github.io/trivy/v0.50/
 https://helm.sh/docs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+root@ip-10-0-0-23:/netflix-clone/scripts# helm install grafana grafana/grafana
+NAME: grafana
+LAST DEPLOYED: Mon Apr 29 21:51:03 2024
+NAMESPACE: monitoring
+STATUS: deployed
+REVISION: 1
+NOTES:
+1. Get your 'admin' user password by running:
+
+   kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+
+2. The Grafana server can be accessed via port 80 on the following DNS name from within your cluster:
+
+   grafana.monitoring.svc.cluster.local
+
+   Get the Grafana URL to visit by running these commands in the same shell:
+     export POD_NAME=$(kubectl get pods --namespace monitoring -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=grafana" -o jsonpath="{.items[0].metadata.name}")
+     kubectl --namespace monitoring port-forward $POD_NAME 3000
+
+3. Login with the password from step 1 and the username: admin
+#################################################################################
+######   WARNING: Persistence is disabled!!! You will lose your data when   #####
+######            the Grafana pod is terminated.                            #####
+#################################################################################
+
+
+
+
+
+root@ip-10-0-0-23:/netflix-clone/scripts# kubectl describe pod/prometheus-server-579dc9cfdf-mdbpf
+Name:             prometheus-server-579dc9cfdf-mdbpf
+Namespace:        monitoring
+Priority:         0
+Service Account:  prometheus-server
+Node:             <none>
+Labels:           app.kubernetes.io/component=server
+                  app.kubernetes.io/instance=prometheus
+                  app.kubernetes.io/managed-by=Helm
+                  app.kubernetes.io/name=prometheus
+                  app.kubernetes.io/part-of=prometheus
+                  app.kubernetes.io/version=v2.51.2
+                  helm.sh/chart=prometheus-25.20.1
+                  pod-template-hash=579dc9cfdf
+Annotations:      <none>
+Status:           Pending
+IP:
+IPs:              <none>
+Controlled By:    ReplicaSet/prometheus-server-579dc9cfdf
+Containers:
+  prometheus-server-configmap-reload:
+    Image:      quay.io/prometheus-operator/prometheus-config-reloader:v0.72.0
+    Port:       <none>
+    Host Port:  <none>
+    Args:
+      --watched-dir=/etc/config
+      --reload-url=http://127.0.0.1:9090/-/reload
+    Environment:  <none>
+    Mounts:
+      /etc/config from config-volume (ro)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-zp8zg (ro)
+  prometheus-server:
+    Image:      quay.io/prometheus/prometheus:v2.51.2
+    Port:       9090/TCP
+    Host Port:  0/TCP
+    Args:
+      --storage.tsdb.retention.time=15d
+      --config.file=/etc/config/prometheus.yml
+      --storage.tsdb.path=/data
+      --web.console.libraries=/etc/prometheus/console_libraries
+      --web.console.templates=/etc/prometheus/consoles
+      --web.enable-lifecycle
+    Liveness:     http-get http://:9090/-/healthy delay=30s timeout=10s period=15s #success=1 #failure=3
+    Readiness:    http-get http://:9090/-/ready delay=30s timeout=4s period=5s #success=1 #failure=3
+    Environment:  <none>
+    Mounts:
+      /data from storage-volume (rw)
+      /etc/config from config-volume (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-zp8zg (ro)
+Conditions:
+  Type           Status
+  PodScheduled   False
+Volumes:
+  config-volume:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      prometheus-server
+    Optional:  false
+  storage-volume:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  prometheus-server
+    ReadOnly:   false
+  kube-api-access-zp8zg:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason            Age    From               Message
+  ----     ------            ----   ----               -------
+  Warning  FailedScheduling  4m31s  default-scheduler  running PreBind plugin "VolumeBinding": binding volumes: context deadline exceeded
