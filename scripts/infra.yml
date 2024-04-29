@@ -380,6 +380,7 @@ Resources:
           bash scripts/InstallDocker.sh
           bash scripts/InstallJenkins.sh
           bash scripts/InstallTrivy.sh
+          bash scripts/InstallHelm.sh
           docker run -d --name sonar -p 9000:9000 sonarqube:lts-community
       Tags:
         - Key: Name
