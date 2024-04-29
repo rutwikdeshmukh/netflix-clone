@@ -5,6 +5,7 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
     2. EC2 KeyPair - Navigate to "EC2 Console >> Network & Security Security >> Key Pairs" and click on "Create key pair". Provide the name and choose "RSA" as the key pair type and ".pem" as the Private key file format. Click on create and keep the auto-downloaded key pair safe as it would be required to log in to the EC2 Server.
     3. API Key from 'themoviedb.org'
 
+
 ========Setting up the Base Infrastructure in AWS========
     #Step 1:    Deploy the CloudFormation template "infra.yml"
     #Step 2:
@@ -49,10 +50,6 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
                 kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 
 
-
-
-
-
 ========FILES IN THIS GITHUB REPO========
     1. infra.yml: A cloudformation template to set up the base infrastructure including a kubernetes cluster in the AWS Cloud.
         Resources created by the template:
@@ -69,81 +66,14 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
     2. Jenkinsfile: Contains the groovy script to clone the application code from github, BUILD an DOCKER IMAGE from the code and PUSH it to ECR.
 
 
-
+PORT-FORWARDING == kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80
+CHANGE-CURRENT-NAMESPACE == kubectl config set-context --current --namespace=
+EKSCTL-TO-CREATE-CLUSTER ::
+    eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml
+    eksctl create cluster -f EksctlClusterCreate.yml
+    eksctl delete cluster --region=ap-south-1 --name=netflix-clone
 
 
 ========REFERENCES========
 https://aquasecurity.github.io/trivy/v0.50/
 https://helm.sh/docs
-
-
-
-
-
-
-
-
-
-PORT-FORWARDING == kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80
-CHANGE-CURRENT-NAMESPACE == kubectl config set-context --current --namespace=
-
-
- 
-
-
-----------ARGO CD----------
-kubectl create namespace argocd
-helm repo add argo https://argoproj.github.io/argo-helm
-helm install argocd -n argocd argo/argo-cd
-kubectl edit svc argocd-server -n argocd                                                                    >>>> Change type to LoadBalancer from ClusterIP
-kubectl get all -n argocd                                                                                   >>>> Access the LoadBalancer URL for ARGO CD Server
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d         >>>> Use the decoded password with 'admin' as username to log into the argocd console
-kubectl create -f ArgoNetflixManifest.yaml
-Console >> Settings >> Repositories >> Connect Repo >> Git Repo Details
-Console >> Applications >> New App >> Application Name + Project Name + SYNC POLICY=Automatic + Repository URL + Path(To ManifestFile) + DESTINATION -- Cluster URL=SelectAvailable + Namespace=default
-# TO DO:: #### kubectl patch svc argocd-server -n argocd -p '{"spec": {"ports": [{"port": 443,"targetPort": 443,"name": "https"},{"port": 80,"targetPort": 80,"name": "http"}],"type": "LoadBalancer"}}'
-
-
-
-kubectl edit svc argocd-server -n argocd >>>> Change type to LoadBalancer from ClusterIP
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-========EKSCTL commands to create a cluster========
-eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml
-eksctl create cluster -f EksctlClusterCreate.yml
-eksctl delete cluster --region=ap-south-1 --name=netflix-clone
