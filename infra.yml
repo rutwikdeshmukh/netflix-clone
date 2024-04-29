@@ -355,7 +355,6 @@ Resources:
   # EC2
   EC2Instance:
     Type: AWS::EC2::Instance
-    DependsOn: EKSNodegroup
     Properties:
       InstanceType: t3.medium
       ImageId: ami-0f58b397bc5c1f2e8 #UBUNTU  #ami-001843b876406202a - Amazon Linux 2023 
@@ -367,7 +366,7 @@ Resources:
           Ebs:
             VolumeType: gp3
             DeleteOnTermination: true
-            VolumeSize: 50
+            VolumeSize: 100
       KeyName: !Ref KeyPairName
       UserData:
         Fn::Base64: |
@@ -384,7 +383,7 @@ Resources:
           docker run -d --name sonar -p 9000:9000 sonarqube:lts-community
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-EC2
+          Value: !Sub ${ProjectName}-EC2-Jenkins-Sonar
         - Key: ProjectName
           Value: !Ref ProjectName
   EC2EIP:
