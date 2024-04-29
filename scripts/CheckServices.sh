@@ -16,3 +16,5 @@ echo "--------------- Java Version ---------------"
 java -version
 echo "--------------- Jenkins Initial Password ---------------"
 cat /var/lib/jenkins/secrets/initialAdminPassword
+echo "--------------- Helm Version ---------------"
+helm version
