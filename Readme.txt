@@ -40,6 +40,7 @@ sudo bash netflix-clone/scripts/CheckServices.sh
 
 ========REFERENCES========
 https://aquasecurity.github.io/trivy/v0.50/
+https://helm.sh/docs
 
 
 
@@ -53,83 +54,79 @@ https://aquasecurity.github.io/trivy/v0.50/
 ========CONNECTING TO THE CLUSTER=======
 aws eks update-kubeconfig --region ap-south-1 --name NetflixClone-cluster 
 kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80
-kubectl -n netflix-clone-ns port-forward service/netflix-clone-cluster-ip 8080:80
-
-========EKSCTL commands to create a cluster========
-eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml
-eksctl create cluster -f EksctlClusterCreate.yml
-eksctl delete cluster --region=ap-south-1 --name=netflix-clone
 
 
-
-
-
-
-
-
-PS==========
 
 
 kubectl config set-context --current --namespace=
 
+----------PROMETHEUS----------
 kubectl create namespace monitoring
- 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm install prometheus prometheus-community/prometheus
 kubectl expose service prometheus-server --type=NodePort --target-port=9090 --name=prometheus-server-ext
  
- 
+----------GRAFANA----------
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update
 helm install grafana grafana/grafana
 kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
- 
 kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
-
-kubectl create namespace argocd
-helm install argocd -n argocd argo/argo-cd
-
-
-
-
-
-
-
-
-
-
-
-
 
 ----------ARGO CD----------
 kubectl create namespace argocd
 helm repo add argo https://argoproj.github.io/argo-helm
 helm install argocd -n argocd argo/argo-cd
-                ###kubectl port-forward service/argocd-server -n argocd 8081:443
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"ports": [{"port": 443,"targetPort": 443,"name": "https"},{"port": 80,"targetPort": 80,"name": "http"}],"type": "LoadBalancer"}}'
+
+Console >> Settings >> Repositories >> Connect Repo >> Git Repo Details
+Console >> Applications >> New App >> Application Name + Project Name + SYNC POLICY=Automatic + Repository URL + Path(To ManifestFile) + DESTINATION -- Cluster URL=SelectAvailable + Namespace=default
+
+# LETS SEE:: 
+
+
 kubectl edit svc argocd-server -n argocd >>>> Change type to LoadBalancer from ClusterIP
 kubectl get all -n argocd >>>> Access the LoadBalancer URL for ARGO CD Server
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d >>>> Use the decoded password with 'admin' as username to log into the argocd console
 
-Console >> Settings >> Repositories >> Connect Repo >> Git Repo Details
 
 
 
 
 
-In order to access the server UI you have the following options:
-
-1. kubectl port-forward service/argocd-server -n argocd 8081:443
-
-    and then open the browser on http://localhost:8080 and accept the certificate
-
-2. enable ingress in the values file `server.ingress.enabled` and either
-      - Add the annotation for ssl passthrough: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-1-ssl-passthrough
-      - Set the `configs.params."server.insecure"` in the values file and terminate SSL at your ingress: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-2-multiple-ingress-objects-and-hosts
 
 
-After reaching the UI the first time you can login with username: admin and the random password generated during the installation. You can find the password by running:
 
 
-(You should delete the initial secret afterwards as suggested by the Getting Started Guide: https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli)
-root@ip-10-0-0-23:/netflix-clone/scripts#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+========EKSCTL commands to create a cluster========
+eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml
+eksctl create cluster -f EksctlClusterCreate.yml
+eksctl delete cluster --region=ap-south-1 --name=netflix-clone
