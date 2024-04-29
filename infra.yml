@@ -362,7 +362,7 @@ Resources:
       SecurityGroupIds: [!Ref SecurityGroup]
       IamInstanceProfile: !Ref Ec2InstanceProfile
       BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: /dev/sda1
           Ebs:
             VolumeType: gp3
             DeleteOnTermination: true

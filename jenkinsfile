@@ -3,101 +3,22 @@ pipeline {
     environment {
         AWS_ACCOUNT_ID = '956630439322'
         AWS_DEFAULT_REGION = 'ap-south-1'
-        API_KEY = '7975259a1710981340754da567bc7579'
         ECR_REPO_NAME = 'netflix-ecr'
-        IMAGE_TAG = 'netflix-clone-v1'
+        IMAGE_TAG = 'netflix-clone-v2'
+        SCANNER_HOME = tool 'sonar-scanner'
     }
-
-    // Retrieve an authentication token and authenticating docker client with registry
     stages  {
         stage('CLEANUP') {
                 steps {
                     deleteDir()
                 }
         }
-
-        stage('AUTHENTICATING DOCKER CLIENT WITH AWS ECR') {
-                steps {
-                    script {
-                    sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
-                    }
-                }
-        }
-
-        // Cloning into source code repository
-        stage('GIT CLONE') {
+        stage('GIT CHECKOUT') {
             steps {
-                sh 'git clone https://github.com/rutwikdeshmukh/netflix-clone.git'
+                git branch: 'main', url: 'https://github.com/rutwikdeshmukh/netflix-clone.git'
             }
         }
-
-        stage('CHECK ALL FILES ') {
-            steps {
-                dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
-                    sh 'ls -Alf'
-                    sh 'pwd'
-                }
-            }
-        }
-
-        // Building the docker images
-        stage('BUILDING IMAGE') {
-            steps {
-                script {
-                    dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
-                        sh 'envsubst < Dockerfile > DockerfileTemp'
-                        sh 'docker build -f DockerfileTemp -t netflix-clone .'
-                    }
-                }
-            }
-        }
-
-        // Tagging the docker image
-        stage('TAGGING IMAGE') {
-            steps {
-                script {
-                    dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
-                        sh 'docker tag netflix-clone:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}'
-                    }
-                }
-            }
-        }
-
-        // Pushing the Docker image to ECR
-        stage('PUSH TO ECR') {
-            steps {
-                script {
-                    dir('/var/lib/jenkins/workspace/CI/netflix-clone/') {
-                        sh 'docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}'
-                    }
-                }
-            }
-        }
-    }
-}
-
-//WEBHOOK
-
-pipeline {
-    agent any
-    tools {
-        jdk 'jdk17'
-        nodejs 'node16'
-    }
-    environment {
-        SCANNER_HOME = tool 'sonar-scanner'
-    }
-    stages {
-        stage('clean workspace') {
-            steps {
-                cleanWs()
-            }
-        }
-        stage('Checkout from Git') {
-            steps {
-                git branch: 'main', url: 'https://github.com/saicharan20/DevSecOps-Project.git'
-            }
-        }
+        // Analyzing the source code with Sonarqube
         stage('Sonarqube Analysis ') {
             steps {
                 withSonarQubeEnv('sonar-server') {
@@ -106,65 +27,43 @@ pipeline {
                 }
             }
         }
-        stage('quality gate') {
+        // Retrieve an authentication token and authenticating docker client with registry
+        stage('AUTHENTICATING DOCKER CLIENT WITH AWS ECR') {
+                steps {
+                    script {
+                        sh "aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+                    }
+                }
+        }
+        // Building the docker images
+        stage('BUILDING IMAGE') {
             steps {
                 script {
-                    waitForQualityGate abortPipeline: false, credentialsId: 'Sonar-token'
+                    sh 'envsubst < Dockerfile > DockerfileTemp'
+                    sh 'docker build -f DockerfileTemp -t netflix-clone .'
                 }
             }
         }
-        // stage('Install Dependencies') {
-        //     steps {
-        //         sh 'npm install'
-        //     }
-        // }
-        stage('TRIVY FS SCAN') {
+        // Tagging the docker image
+        stage('TAGGING IMAGE') {
             steps {
-                sh 'trivy fs . > trivyfs.txt'
-            }
-        }
-        // stage('TRIVY') {
-        //     steps {
-        //         sh 'trivy image saicharan20/netflix:latest > trivyimage.txt'
-        //     }
-        }
-    }
-
-pipeline {
-    agent any
-    tools {
-        jdk 'jdk17'
-        nodejs 'node16'
-        sonar-scanner 'SONAR-SCAN'
-    }
-    environment {
-        SONAR_SCAN_HOME = tool 'SONAR-SCAN'
-    }
-    stages {
-        stage('clean workspace') {
-            steps {
-                cleanWs()
-            }
-        }
-        stage('Checkout from Git') {
-            steps {
-                git branch: 'main', url: 'https://github.com/rutwikdeshmukh/netflix-clone.git'
-            }
-        }
-        stage('Sonarqube Analysis ') {
-            steps {
-                withSonarQubeEnv('sonar-server') {
-                    sh ''' $SONAR_SCAN_HOME/bin/sonar-scanner \
-                    -Dsonar.projectName=Netflix \
-                    -Dsonar.projectKey=Netflix \
-                    -Dsonar.sources=. \
-                    -Dsonar.qualitygate.wait=true '''
+                script {
+                    sh 'docker tag netflix-clone:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}'
                 }
             }
         }
-        stage('TRIVY FS SCAN') {
+        //TRIVY SCAN
+        stage('TRIVY IMAGE SCAN') {
             steps {
-                sh 'trivy fs . > trivyfs.txt'
+                sh 'trivy image ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}'
+            }
+        }
+        // Pushing the Docker image to ECR
+        stage('PUSH TO ECR') {
+            steps {
+                script {
+                    sh 'docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}'
+                }
             }
         }
     }

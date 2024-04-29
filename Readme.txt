@@ -15,7 +15,8 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
     6.
     7.
 
-
+cd ../../
+sudo bash netflix-clone/scripts/CheckServices.sh
 
 
 ========FILES IN THIS GITHUB REPO========
