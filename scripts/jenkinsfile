@@ -4,7 +4,7 @@ pipeline {
         AWS_ACCOUNT_ID = '956630439322'
         AWS_DEFAULT_REGION = 'ap-south-1'
         ECR_REPO_NAME = 'netflix-ecr'
-        IMAGE_TAG = 'netflix-clone-v2'
+        IMAGE_TAG = 'netflix-clone-v4'
         SCANNER_HOME = tool 'sonar-scanner'
     }
     stages  {
