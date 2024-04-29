@@ -7,9 +7,14 @@ spec:
     project: default
     source:
         repoURL: 'https://github.com/rutwikdeshmukh/netflix-clone.git'
-        path: manifests/
+        path: manifests
         targetRevision: main
     destination:
-        server: 'https://AB80DCD201199E81748407672287B71F.yl4.ap-south-1.eks.amazonaws.com'
+        server: 'https://kubernetes.default.svc'
         namespace: default
+    syncPolicy:
+        automated:
+            prune: false
+            selfHeal: false
+
 
