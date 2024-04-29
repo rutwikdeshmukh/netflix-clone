@@ -53,10 +53,40 @@ https://aquasecurity.github.io/trivy/v0.50/
 ========CONNECTING TO THE CLUSTER=======
 aws eks update-kubeconfig --region ap-south-1 --name NetflixClone-cluster 
 kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80
-kubectl -n netflix-clone-ns port-forward service/netflix-clone-755d5cc96-pgbkj 8080:80
 kubectl -n netflix-clone-ns port-forward service/netflix-clone-cluster-ip 8080:80
 
 ========EKSCTL commands to create a cluster========
 eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml
 eksctl create cluster -f EksctlClusterCreate.yml
 eksctl delete cluster --region=ap-south-1 --name=netflix-clone
+
+
+
+
+
+
+
+
+PS==========
+
+
+kubectl config set-context --current --namespace=
+
+kubectl create namespace monitoring
+ 
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install prometheus prometheus-community/prometheus
+kubectl expose service prometheus-server --type=NodePort --target-port=9090 --name=prometheus-server-ext
+ 
+ 
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install grafana grafana/grafana
+kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
+ 
+kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+
+kubectl create namespace argocd
+helm install argocd -n argocd argo/argo-cd
+

@@ -1,15 +1,15 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-    name: netflix-app
+    name: netflix-clone
     namespace: argocd
 spec:
     project: default
     source:
-        repoURL: 'https://github.com/amitvashisttech/kubernetes-eks-bs-28-Feb-2024.git'
-        path: 38-Netflix-Project/manifests/
+        repoURL: 'https://github.com/rutwikdeshmukh/netflix-clone.git'
+        path: manifests/
         targetRevision: main
     destination:
-        server: 'https://kubernetes.default.svc'
+        server: 'https://AB80DCD201199E81748407672287B71F.yl4.ap-south-1.eks.amazonaws.com'
         namespace: default
 
