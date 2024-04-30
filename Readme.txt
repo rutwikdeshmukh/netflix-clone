@@ -58,6 +58,11 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
                     >>> If grafana is not accepting the password in the console, do this:
                         kubectl exec --stdin --tty <stable-grafana-POD-NAME> -- /bin/bash
                         grafana-cli admin reset-admin-password <NEW-PASSWORD>
+    #Step 6(Optional):
+                1. Login to your grafana console
+                2. Navigate to Connections >> Add connections >> Search for 'Prometheus' >> Add New Data Sources
+                3. Provide Name, Server URL(LoadBalancer of Prometheus Server URL) and Click on 'save & test'
+                4. Navigate to Home >> Dashboards >> New Dashboard >> Import Dashboard and provide the ID of the the desired dashboard from https://grafana.com/grafana/dashboards/
 
 
 PORT-FORWARDING == kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80
@@ -70,9 +75,13 @@ EKSCTL-TO-CREATE-CLUSTER ::
 
 
 ========REFERENCES========
+https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/overview/
 https://aquasecurity.github.io/trivy/v0.50/
 https://helm.sh/docs
+https://argo-cd.readthedocs.io/en/stable/getting_started/
+https://prometheus.io/docs/introduction/overview/
 https://grafana.com/docs/grafana-cloud/monitor-infrastructure/kubernetes-monitoring/
+https://grafana.com/grafana/dashboards/
 
 
 ========FILES IN THIS GITHUB REPO========
