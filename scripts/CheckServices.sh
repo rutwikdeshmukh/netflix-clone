@@ -18,3 +18,5 @@ echo "--------------- Jenkins Initial Password ---------------"
 cat /var/lib/jenkins/secrets/initialAdminPassword
 echo "--------------- Helm Version ---------------"
 helm version
+echo "--------------- Prometheus Version ---------------"
+prometheus --version

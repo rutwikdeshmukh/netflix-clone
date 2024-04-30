@@ -24,30 +24,55 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
                 4. execute 'cd netflix-clone/'
                 5. Configure AWS CLI with your AWS access key and secret key
                 6. execute 'aws eks update-kubeconfig --region ap-south-1 --name NetflixClone-cluster'
-
-    #Step 4:    ----------ARGO CD----------
+    #Step 4:    
+                ----------ARGO CD----------
                 kubectl create namespace argocd
+                kubectl config set-context --current --namespace=argocd
                 helm repo add argo https://argoproj.github.io/argo-helm
-                helm install argocd -n argocd argo/argo-cd
-                kubectl edit svc argocd-server -n argocd                                                                    >>>> Change type to LoadBalancer from ClusterIP
-                kubectl get all -n argocd                                                                                   >>>> Access the LoadBalancer URL for ARGO CD Server
-                kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d         >>>> Use the decoded password with 'admin' as username to log into the argocd console
+                helm install argocd argo/argo-cd
+                kubectl edit svc argocd-server                                                                   >>>> Change type to LoadBalancer from ClusterIP
+                kubectl get all                                                                                  >>>> Access the LoadBalancer URL for ARGO CD Server
+                kubectl get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d        >>>> Use the decoded password with 'admin' as username to log into the argocd console
                 kubectl create -f ArgoNetflixManifest.yaml
                 Console >> Settings >> Repositories >> Connect Repo >> Git Repo Details
                 Console >> Applications >> New App >> Application Name + Project Name + SYNC POLICY=Automatic + Repository URL + Path(To ManifestFile) + DESTINATION -- Cluster URL=SelectAvailable + Namespace=default
-                # TO DO:: #### kubectl patch svc argocd-server -n argocd -p '{"spec": {"ports": [{"port": 443,"targetPort": 443,"name": "https"},{"port": 80,"targetPort": 80,"name": "http"}],"type": "LoadBalancer"}}'
-    #Step 5:    ----------PROMETHEUS----------
+                # TO DO:: #### kubectl patch svc argocd-server -p '{"spec": {"ports": [{"port": 443,"targetPort": 443,"name": "https"},{"port": 80,"targetPort": 80,"name": "http"}],"type": "LoadBalancer"}}'
+    #Step 5:    
+                ----------PROMETHEUS----------
                 kubectl create namespace monitoring
-                helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-                helm repo update
-                helm install prometheus prometheus-community/prometheus
-                kubectl expose service prometheus-server --type=NodePort --target-port=9090 --name=prometheus-server-ext
-    #Step 6:    ----------GRAFANA----------
+                kubectl config set-context --current --namespace=monitoring
+                helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 
+                helm repo update 
+                helm install stable prometheus-community/kube-prometheus-stack
+                kubectl get pods -l "release=stable"
+                kubectl edit svc stable-kube-prometheus-sta-prometheus                                           >>>> Change type to LoadBalancer from ClusterIP
+                kubectl get svc                                                                                  >>>> Access the LoadBalancer URL for Prometheus Server
+    #Step 6:    
+                ----------GRAFANA----------
                 helm repo add grafana https://grafana.github.io/helm-charts
                 helm repo update
                 helm install grafana grafana/grafana
                 kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
-                kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+                kubectl edit svc stable-grafana
+                kubectl get secret grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+                    >>> If grafana is not accepting the password in the console, do this:
+                        kubectl exec --stdin --tty <stable-grafana-POD-NAME> -- /bin/bash
+                        grafana-cli admin reset-admin-password <NEW-PASSWORD>
+
+
+PORT-FORWARDING == kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80
+CHANGE-CURRENT-NAMESPACE == kubectl config set-context --current --namespace=
+GET-ALL-LBs == kubectl get all --all-namespaces | grep LoadBalancer
+EKSCTL-TO-CREATE-CLUSTER ::
+    eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml
+    eksctl create cluster -f EksctlClusterCreate.yml
+    eksctl delete cluster --region=ap-south-1 --name=netflix-clone
+
+
+========REFERENCES========
+https://aquasecurity.github.io/trivy/v0.50/
+https://helm.sh/docs
+https://grafana.com/docs/grafana-cloud/monitor-infrastructure/kubernetes-monitoring/
 
 
 ========FILES IN THIS GITHUB REPO========
@@ -64,136 +89,3 @@ DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Applic
         i. 1 EKS Cluster >> 1 EKS Node Group >> 2 EKS Worker Nodes
         j. ECR Private Repository
     2. Jenkinsfile: Contains the groovy script to clone the application code from github, BUILD an DOCKER IMAGE from the code and PUSH it to ECR.
-
-
-PORT-FORWARDING == kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80
-CHANGE-CURRENT-NAMESPACE == kubectl config set-context --current --namespace=
-EKSCTL-TO-CREATE-CLUSTER ::
-    eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml
-    eksctl create cluster -f EksctlClusterCreate.yml
-    eksctl delete cluster --region=ap-south-1 --name=netflix-clone
-
-
-========REFERENCES========
-https://aquasecurity.github.io/trivy/v0.50/
-https://helm.sh/docs
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-root@ip-10-0-0-23:/netflix-clone/scripts# helm install grafana grafana/grafana
-NAME: grafana
-LAST DEPLOYED: Mon Apr 29 21:51:03 2024
-NAMESPACE: monitoring
-STATUS: deployed
-REVISION: 1
-NOTES:
-1. Get your 'admin' user password by running:
-
-   kubectl get secret --namespace monitoring grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
-
-
-2. The Grafana server can be accessed via port 80 on the following DNS name from within your cluster:
-
-   grafana.monitoring.svc.cluster.local
-
-   Get the Grafana URL to visit by running these commands in the same shell:
-     export POD_NAME=$(kubectl get pods --namespace monitoring -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=grafana" -o jsonpath="{.items[0].metadata.name}")
-     kubectl --namespace monitoring port-forward $POD_NAME 3000
-
-3. Login with the password from step 1 and the username: admin
-#################################################################################
-######   WARNING: Persistence is disabled!!! You will lose your data when   #####
-######            the Grafana pod is terminated.                            #####
-#################################################################################
-
-
-
-
-
-root@ip-10-0-0-23:/netflix-clone/scripts# kubectl describe pod/prometheus-server-579dc9cfdf-mdbpf
-Name:             prometheus-server-579dc9cfdf-mdbpf
-Namespace:        monitoring
-Priority:         0
-Service Account:  prometheus-server
-Node:             <none>
-Labels:           app.kubernetes.io/component=server
-                  app.kubernetes.io/instance=prometheus
-                  app.kubernetes.io/managed-by=Helm
-                  app.kubernetes.io/name=prometheus
-                  app.kubernetes.io/part-of=prometheus
-                  app.kubernetes.io/version=v2.51.2
-                  helm.sh/chart=prometheus-25.20.1
-                  pod-template-hash=579dc9cfdf
-Annotations:      <none>
-Status:           Pending
-IP:
-IPs:              <none>
-Controlled By:    ReplicaSet/prometheus-server-579dc9cfdf
-Containers:
-  prometheus-server-configmap-reload:
-    Image:      quay.io/prometheus-operator/prometheus-config-reloader:v0.72.0
-    Port:       <none>
-    Host Port:  <none>
-    Args:
-      --watched-dir=/etc/config
-      --reload-url=http://127.0.0.1:9090/-/reload
-    Environment:  <none>
-    Mounts:
-      /etc/config from config-volume (ro)
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-zp8zg (ro)
-  prometheus-server:
-    Image:      quay.io/prometheus/prometheus:v2.51.2
-    Port:       9090/TCP
-    Host Port:  0/TCP
-    Args:
-      --storage.tsdb.retention.time=15d
-      --config.file=/etc/config/prometheus.yml
-      --storage.tsdb.path=/data
-      --web.console.libraries=/etc/prometheus/console_libraries
-      --web.console.templates=/etc/prometheus/consoles
-      --web.enable-lifecycle
-    Liveness:     http-get http://:9090/-/healthy delay=30s timeout=10s period=15s #success=1 #failure=3
-    Readiness:    http-get http://:9090/-/ready delay=30s timeout=4s period=5s #success=1 #failure=3
-    Environment:  <none>
-    Mounts:
-      /data from storage-volume (rw)
-      /etc/config from config-volume (rw)
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-zp8zg (ro)
-Conditions:
-  Type           Status
-  PodScheduled   False
-Volumes:
-  config-volume:
-    Type:      ConfigMap (a volume populated by a ConfigMap)
-    Name:      prometheus-server
-    Optional:  false
-  storage-volume:
-    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
-    ClaimName:  prometheus-server
-    ReadOnly:   false
-  kube-api-access-zp8zg:
-    Type:                    Projected (a volume that contains injected data from multiple sources)
-    TokenExpirationSeconds:  3607
-    ConfigMapName:           kube-root-ca.crt
-    ConfigMapOptional:       <nil>
-    DownwardAPI:             true
-QoS Class:                   BestEffort
-Node-Selectors:              <none>
-Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
-                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
-Events:
-  Type     Reason            Age    From               Message
-  ----     ------            ----   ----               -------
-  Warning  FailedScheduling  4m31s  default-scheduler  running PreBind plugin "VolumeBinding": binding volumes: context deadline exceeded
