@@ -64,9 +64,9 @@ This guide will help you set up the base infrastructure on AWS using CloudFormat
 4. kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
 5. kubectl edit svc stable-grafana
 6. kubectl get secret grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
-    If grafana is not accepting the password in the console, do this:
-    kubectl exec --stdin --tty <stable-grafana-POD-NAME> -- /bin/bash
-    grafana-cli admin reset-admin-password <NEW-PASSWORD>
+7. If grafana is not accepting the password in the console, do this:
+- `kubectl exec --stdin --tty <stable-grafana-POD-NAME> -- /bin/bash`
+- `grafana-cli admin reset-admin-password <NEW-PASSWORD>`
 
 ### Step 7 (Optional)
 1. Login to your grafana console
