@@ -47,14 +47,14 @@ This guide will help you set up the base infrastructure on AWS using CloudFormat
 
 ### Step 5: Set up Prometheus
 
-kubectl create namespace monitoring
-kubectl config set-context --current --namespace=monitoring
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 
-helm repo update 
-helm install stable prometheus-community/kube-prometheus-stack
-kubectl get pods -l "release=stable"
-kubectl edit svc stable-kube-prometheus-sta-prometheus >>>> Change type to LoadBalancer from ClusterIP
-kubectl get svc    
+1. kubectl create namespace monitoring
+2. kubectl config set-context --current --namespace=monitoring
+3. helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 
+4. helm repo update 
+5. helm install stable prometheus-community/kube-prometheus-stack
+6. kubectl get pods -l "release=stable"
+7. kubectl edit svc stable-kube-prometheus-sta-prometheus >>>> Change type to LoadBalancer from ClusterIP
+8. kubectl get svc    
 
 ### Step 6: Set up Grafana
 
