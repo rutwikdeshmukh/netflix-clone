@@ -79,10 +79,10 @@ This guide will help you set up the base infrastructure on AWS using CloudFormat
 1. PORT-FORWARDING:
 - `kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80`
 2. CHANGE-CURRENT-NAMESPACE:
-- `kubectl config set-context --current --namespace=`
+- `kubectl config set-context --current --namespace=<NAMESPACE_NAME>`
 3. GET-ALL-LBs:
 - `kubectl get all --all-namespaces | grep LoadBalancer`
 4. EKSCTL-TO-CREATE-CLUSTER:
-- `eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml`
+- `eksctl create cluster --name <CLUSTER-NAME> --version <VERSION> --fargate --with-oidc --region <REGION> --vpc-private-subnets <SUBNET-1>,<SUBNET-2> --tags <KEY>=<VALUE> --dry-run > EksctlClusterCreate.yml`
 - `eksctl create cluster -f EksctlClusterCreate.yml`
-- `eksctl delete cluster --region=ap-south-1 --name=netflix-clone`
+- `eksctl delete cluster --region=<REGION> --name=<CLUSTER-NAME>`
