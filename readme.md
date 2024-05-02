@@ -34,16 +34,16 @@ This guide will help you set up the base infrastructure on AWS using CloudFormat
 
 ### Step 4: Set up Argo CD
 
-kubectl create namespace argocd
-kubectl config set-context --current --namespace=argocd
-helm repo add argo https://argoproj.github.io/argo-helm
-helm install argocd argo/argo-cd
-kubectl edit svc argocd-server >>>>> Change type to LoadBalancer from ClusterIP
-kubectl get all >>>>> Access the LoadBalancer URL for ARGO CD Server
-kubectl get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d >>>> Use the decoded password with 'admin' as username to log into the argocd console
-kubectl create -f ArgoNetflixManifest.yaml
-Console >> Settings >> Repositories >> Connect Repo >> Git Repo Details
-Console >> Applications >> New App >> Application Name + Project Name + SYNC POLICY=Automatic + Repository URL + Path(To ManifestFile) + DESTINATION -- Cluster URL=SelectAvailable + Namespace=default
+1. kubectl create namespace argocd
+2. kubectl config set-context --current --namespace=argocd
+3. helm repo add argo https://argoproj.github.io/argo-helm
+4. helm install argocd argo/argo-cd
+5. kubectl edit svc argocd-server >>>>> Change type to LoadBalancer from ClusterIP
+6. kubectl get all >>>>> Access the LoadBalancer URL for ARGO CD Server
+7. kubectl get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d >>>> Use the decoded password with 'admin' as username to log into the argocd console
+9. kubectl create -f ArgoNetflixManifest.yaml
+- `Console >> Settings >> Repositories >> Connect Repo >> Git Repo Details`
+- `Console >> Applications >> New App >> Application Name + Project Name + SYNC POLICY=Automatic + Repository URL + Path(To ManifestFile) + DESTINATION -- Cluster URL=SelectAvailable + Namespace=default`
 
 ### Step 5: Set up Prometheus
 
