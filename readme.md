@@ -1,4 +1,4 @@
-# Base Infrastructure Setup on AWS and Kubernetes Deployment
+# DevOps from scratch: Creating the Base Infrastructure on AWS to Deploying Application to Kubernetes cluster.
 
 This guide will help you set up the base infrastructure on AWS using CloudFormation, deploy a Jenkins server, SonarQube, Argo CD, Prometheus, and Grafana. You will also learn how to deploy an application to a Kubernetes cluster.
 
@@ -14,45 +14,77 @@ This guide will help you set up the base infrastructure on AWS using CloudFormat
 
 ### Step 2: Set up Jenkins and SonarQube
 
-1. Connect to the newly created EC2 instance
-2. Retrieve the initial admin password for Jenkins
-3. Access Jenkins and configure the first admin user
-4. Access SonarQube, update the default password, and generate a new token
-5. Configure Jenkins to use SonarQube
+1. Connect to the newly created EC2 instance using "Session Manager" or by running "ssh -i "<KEY_PAIR_NAME.pem>" ec2-user@<EC2_PUBLIC_IP_ADDRESS>" from the command line (Start the command line from the folder which has the key pair or CD into it).
+2. Once logged in to the serial console of the EC2, execute "sudo cat /var/lib/jenkins/secrets/initialAdminPassword" and notedown the CREDENTIALS.
+3. Open a browser and connect to Jenkins with this URL: "http://<EC2_PUBLIC_IP_ADDRESS>:8080". Provide the CREDENTIALS from #STEP 2.2 and configure the first admin user for Jenkins.
+4. Open one more browser window for Sonarqube and visit this URL: "http://<EC2_PUBLIC_IP_ADDRESS>:9000". Provide the CREDENTIALS (USER:'admin' + PASS:'admin') and then update the default password on the next page.
+5. Once Logged in, Navigate to Administration >> Security >> Users >> Tokens >> Update Tokens >> Generate Token and keep it saved somewhere.
+6. Open the Jenkins Server, Navigate to Manage Jenkins >> Plugins >> Install 'SonarQube Scanner for Jenkins'
+7. Navigate to Manage Jenkins >> System >> SonarQube servers >> Name=sonar-server; Server URL=<DEFAULT>; Server authentication token >> Add > Jenkins > Domain=Global credentials >  Kind=Secret text > Secret="TOKEN FROM STEP 2.5" > ID=sonar-token  > Add.
+8. Navigate to Dashboard >> New Item >> Create your first pipeline and name it "CI". Use the "Jenkinsfile" or its contents for Pipeline Script.(Change the variable values accordingly before creating the pipeline) >> Build Now
 
-### Step 3: Prepare the Kubernetes cluster
+### Step 3: Connecting to the EKS Cluster
 
-1. Log into the serial console of the EC2 instance
-2. Configure AWS CLI with your AWS access key and secret key
-3. Update the Kubernetes configuration for the cluster
+1. Log into the serial console of the EC2
+2. execute 'cd ../../'
+3. execute 'sudo bash netflix-clone/scripts/CheckServices.sh' >> See if all the requirements are met or not.
+4. execute 'cd netflix-clone/'
+5. Configure AWS CLI with your AWS access key and secret key
+6. execute 'aws eks update-kubeconfig --region ap-south-1 --name NetflixClone-cluster'
 
 ### Step 4: Set up Argo CD
 
-1. Install Argo CD using Helm
-2. Configure Argo CD to use a LoadBalancer service
-3. Create a new application in Argo CD for your Git repository and the desired path
+kubectl create namespace argocd
+kubectl config set-context --current --namespace=argocd
+helm repo add argo https://argoproj.github.io/argo-helm
+helm install argocd argo/argo-cd
+kubectl edit svc argocd-server >>>>> Change type to LoadBalancer from ClusterIP
+kubectl get all >>>>> Access the LoadBalancer URL for ARGO CD Server
+kubectl get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d >>>> Use the decoded password with 'admin' as username to log into the argocd console
+kubectl create -f ArgoNetflixManifest.yaml
+Console >> Settings >> Repositories >> Connect Repo >> Git Repo Details
+Console >> Applications >> New App >> Application Name + Project Name + SYNC POLICY=Automatic + Repository URL + Path(To ManifestFile) + DESTINATION -- Cluster URL=SelectAvailable + Namespace=default
 
 ### Step 5: Set up Prometheus
 
-1. Install Prometheus using Helm
-2. Configure Prometheus to use a LoadBalancer service
+kubectl create namespace monitoring
+kubectl config set-context --current --namespace=monitoring
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts 
+helm repo update 
+helm install stable prometheus-community/kube-prometheus-stack
+kubectl get pods -l "release=stable"
+kubectl edit svc stable-kube-prometheus-sta-prometheus >>>> Change type to LoadBalancer from ClusterIP
+kubectl get svc    
 
 ### Step 6: Set up Grafana
 
-1. Install Grafana using Helm
-2. Configure Grafana to use a NodePort service
-3. Connect Grafana to Prometheus as a data source
-4. Import a dashboard from Grafana.com
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install grafana grafana/grafana
+kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
+kubectl edit svc stable-grafana
+kubectl get secret grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+    >>> If grafana is not accepting the password in the console, do this:
+    kubectl exec --stdin --tty <stable-grafana-POD-NAME> -- /bin/bash
+    grafana-cli admin reset-admin-password <NEW-PASSWORD>
 
-## Helm and Kubernetes Commands
+### Step 7 (Optional)
+1. Login to your grafana console
+2. Navigate to Connections >> Add connections >> Search for 'Prometheus' >> Add New Data Sources
+3. Provide Name, Server URL(LoadBalancer of Prometheus Server URL) and Click on 'save & test'
+4. Navigate to Home >> Dashboards >> New Dashboard >> Import Dashboard and provide the ID of the the desired dashboard from https://grafana.com/grafana/dashboards/
 
-- `helm repo add <REPO_NAME> <REPO_URL>`
-- `helm repo update`
-- `helm install <RELEASE_NAME> <CHART_NAME>`
-- `kubectl create namespace <NAMESPACE_NAME>`
-- `kubectl config set-context --current --namespace=<NAMESPACE_NAME>`
-- `kubectl edit svc <SERVICE_NAME>`
-- `kubectl get all --all-namespaces | grep LoadBalancer`
+
+
+## Kubernetes Commands
+
+- `PORT-FORWARDING == kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80`
+- `CHANGE-CURRENT-NAMESPACE == kubectl config set-context --current --namespace=`
+- `GET-ALL-LBs == kubectl get all --all-namespaces | grep LoadBalancer`
+- `EKSCTL-TO-CREATE-CLUSTER ::`
+- `    eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml`
+- `    eksctl create cluster -f EksctlClusterCreate.yml`
+- `    eksctl delete cluster --region=ap-south-1 --name=netflix-clone`
 
 ## Code Snippets
 
