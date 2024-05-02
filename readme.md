@@ -58,15 +58,15 @@ This guide will help you set up the base infrastructure on AWS using CloudFormat
 
 ### Step 6: Set up Grafana
 
-helm repo add grafana https://grafana.github.io/helm-charts
-helm repo update
-helm install grafana grafana/grafana
-kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
-kubectl edit svc stable-grafana
-kubectl get secret grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+1. helm repo add grafana https://grafana.github.io/helm-charts
+2. helm repo update
+3. helm install grafana grafana/grafana
+4. kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
+5. kubectl edit svc stable-grafana
+6. kubectl get secret grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
     >>> If grafana is not accepting the password in the console, do this:
-    kubectl exec --stdin --tty <stable-grafana-POD-NAME> -- /bin/bash
-    grafana-cli admin reset-admin-password <NEW-PASSWORD>
+        kubectl exec --stdin --tty <stable-grafana-POD-NAME> -- /bin/bash
+        grafana-cli admin reset-admin-password <NEW-PASSWORD>
 
 ### Step 7 (Optional)
 1. Login to your grafana console
@@ -74,23 +74,12 @@ kubectl get secret grafana -o jsonpath="{.data.admin-password}" | base64 --decod
 3. Provide Name, Server URL(LoadBalancer of Prometheus Server URL) and Click on 'save & test'
 4. Navigate to Home >> Dashboards >> New Dashboard >> Import Dashboard and provide the ID of the the desired dashboard from https://grafana.com/grafana/dashboards/
 
-
-
 ## Kubernetes Commands
 
 - `PORT-FORWARDING == kubectl -n <NAMESPACE_NAME> port-forward service/<SERVICE_NAME> 8080:80`
 - `CHANGE-CURRENT-NAMESPACE == kubectl config set-context --current --namespace=`
 - `GET-ALL-LBs == kubectl get all --all-namespaces | grep LoadBalancer`
 - `EKSCTL-TO-CREATE-CLUSTER ::`
-- `    eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml`
-- `    eksctl create cluster -f EksctlClusterCreate.yml`
-- `    eksctl delete cluster --region=ap-south-1 --name=netflix-clone`
-
-## Code Snippets
-
-**Jenkinsfile:**
-
-**infra.yml:**
-
-```yaml
-# Your CloudFormation template to set up the base infrastructure including a Kubernetes cluster in the AWS Cloud
+- `eksctl create cluster --name netflix-clone --version 1.29 --fargate --with-oidc --region ap-south-1 --vpc-private-subnets subnet-09359a650ff978920,subnet-025ccf229bc29a533 --tags ProjectName=NetflixClone --dry-run > EksctlClusterCreate.yml`
+- `eksctl create cluster -f EksctlClusterCreate.yml`
+- `eksctl delete cluster --region=ap-south-1 --name=netflix-clone`
