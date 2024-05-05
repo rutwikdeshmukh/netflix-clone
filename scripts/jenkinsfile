@@ -1,9 +1,9 @@
 pipeline {
     agent any
     environment {
-        AWS_ACCOUNT_ID = '956630439322'
+        AWS_ACCOUNT_ID = '<ACCOUNT_ID>'
         AWS_DEFAULT_REGION = 'ap-south-1'
-        ECR_REPO_NAME = 'netflix-ecr'
+        ECR_REPO_NAME = '<ECR_REPO_NAME>'
         IMAGE_TAG = 'netflix-clone-v1'
         SCANNER_HOME = tool 'sonar-scanner'
     }
